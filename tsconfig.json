@@ -1,11 +1,15 @@
 {
   "compilerOptions": {
-    "target": "es2017",        // or es2015, es2020 etc.
-    "module": "esnext",
-    "lib": ["es2017", "dom"], // include dom if working with browser
-    "outDir": "dist",
+    "target": "es2017",
+    "module": "ESNext",
+    "lib": ["es2017", "dom"],
+    "strict": true,
+    "declaration": true,
+    "declarationDir": "./dist/types",
+    "outDir": "./dist/ts",
     "rootDir": "src",
-    "strict": true
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true
   },
   "include": ["src"]
 }
