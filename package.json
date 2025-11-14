@@ -4,11 +4,23 @@
     "@eslint/js": "^9.39.1",
     "@typescript-eslint/eslint-plugin": "^8.46.4",
     "@typescript-eslint/parser": "^8.46.4",
+    "esbuild": "^0.27.0",
     "eslint": "^9.39.1",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-import": "^2.32.0",
     "globals": "^16.5.0",
     "prettier": "^3.6.2",
     "typescript-eslint": "^8.46.4"
-  }
+  },
+  "scripts": {
+    "build:esm": "esbuild src/index.ts --bundle --format=esm --outfile=dist/qformvalidate.esm.js --sourcemap",
+    "build:browser": "esbuild src/index.ts --bundle --format=iife --global-name=qFormValidate --outfile=dist/qformvalidate.browser.js --sourcemap",
+    "build:browser:min": "esbuild src/index.ts --bundle --minify --format=iife --global-name=qFormValidate --outfile=dist/qformvalidate.browser.min.js",
+    "build": "npm run build:esm && npm run build:browser && npm run build:browser:min"
+  },
+  "main": "dist/qformvalidate.esm.js",
+  "module": "dist/qformvalidate.esm.js",
+  "types": "dist/types/index.d.ts",
+  "unpkg": "dist/qformvalidate.browser.min.js",
+  "jsdelivr": "dist/qformvalidate.browser.min.js"
 }
