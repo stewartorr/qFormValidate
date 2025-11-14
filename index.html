@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>qFormValidate Test</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 400px;
+      margin: 2rem auto;
+    }
+    textarea.error,
+    select.error,
+    input:not(input[type="checkbox"], input[type="radio"]).error {
+      border: 1px solid red;
+    }
+    ol, li {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    label {
+      display: block;
+      margin-top: 1rem;
+    }
+    .inline-error {
+      display: block;
+      color: red;
+      font-size: 10px;
+      padding: 5px;
+    }
+    input, select, textarea {
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <h1>qFormValidate Demo</h1>
+  <form id="myForm">
+    <ol>
+      <li>
+        <label>Not required</label>
+        <input type="email" name="email">
+      </li>
+      <li>
+        <label>Test</label>
+        <select name="select" data-error-msg="ermhgerd!" required>
+          <option></option>
+          <option>Stewart</option>
+          <option>Claire</option>
+          <option>Dave</option>
+          <option>Ian</option>
+        </select>
+      </li>
+      <li>
+        <label>Test</label>
+        <select name="select" data-error-msg="ermhgerd!" required multiple>
+          <option></option>
+          <option>Stewart</option>
+          <option>Claire</option>
+          <option>Dave</option>
+          <option>Ian</option>
+        </select>
+      </li>
+      <li>
+        <label>Email</label>
+        <input type="email" name="email" required>
+      </li>
+      <li>
+        <label>Website</label>
+        <input type="url" name="url">
+      </li>
+      <li>
+        <label>File not required</label>
+        <input type="file" name="file">
+      </li>
+      <li>
+        <label>File required</label>
+        <input type="file" name="file2" required>
+      </li>
+      <li>
+        <label>Phone</label>
+        <input type="tel" name="phone" id="phone" required>
+      </li>
+      <li>
+        <label>Password</label>
+        <input type="password" name="password" data-min-length="6" required>
+      </li>
+      <li>
+        <input type="checkbox" name="checkbox" required data-error-msg="You must agree to this thing.">
+        <label>I agree to something</label>
+      </li>
+    </ol>
+    <button type="submit">Submit</button>
+  </form>
+
+  <script type="module">
+    import { qFormValidate } from './dist/index.js';
+
+    const form = document.getElementById('myForm');
+    qFormValidate(form, {
+      onBeforeValidate: () => console.log('Validating...'),
+      onAfterValidate: () => console.log('Done validating!'),
+      onFieldSuccess: (field) => console.log(field, 'VALID')
+    });
+  </script>
+</body>
+</html>
