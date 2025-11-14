@@ -1,35 +1,26 @@
-import { patterns, isValidEmail, isValidURL, isValidTel, trim } from "./utils";
+import { patterns, isValidEmail, isValidURL, isValidTel, trim } from './utils.js';
 
 // Define an interface for the options
 export interface QFVOptions {
-  scrollTopOffset?: number; // How much to adjust scroll by
+  scrollTopOffset?: number;
   defaultErrorMsg: string;
   defaultErrorMsgSection: string;
-  onSubmit?: () => void;
-  onSubmitError?: () => void; // Called on form submit error
-  onError?: () => void; // Called on individual field error
-  onSuccess?: () => void; // Called if form passes validation
-  onAfterValidate?: () => void; // Called after validation
-  onBeforeValidate?: () => void; // Called before validation
+  onSubmitError?: () => void;
+  onSubmitSuccess?: () => void;
+  onFieldError?: (field: FormFieldElement, errorMsg: string) => void;
+  onFieldSuccess?: (field: FormFieldElement) => void;
+  onAfterValidate?: () => void;
+  onBeforeValidate?: () => void;
 }
 
-const dateOnly = /[0-9\/\-\.]/; // Date characters only
-const digitsOnly = /[0-9]/; // Integers only
-const integerOnly = /[0-9\.,]/; // Floats only
-const alphaOnly = /[a-z]/i; // Alpha only
-const alphaNumericOnly = /[a-z0-9]/i; // Alphanumeric only
-const urlOnly = /[a-z0-9\.\-:\/\?=&#]/i; // URL only characters
-const emailOnly = /[a-z0-9@_\-\+\.]/i; // Email only characters
-const telOnly = /[0-9 /(/)+]/i; // Telephone only characters
+type FormFieldElement = HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
 
-type FormFieldElement = | HTMLInputElement| HTMLSelectElement | HTMLTextAreaElement;
-
-type InputTypeRestrictions = "tel" | "email" | "url" | "number";
+type InputTypeRestrictions = 'tel' | 'email' | 'url' | 'number';
 const typeRestrictions: Record<InputTypeRestrictions, RegExp> = {
-  tel: telOnly,
-  email: emailOnly,
-  url: urlOnly,
-  number: integerOnly,
+  tel: patterns.telOnly,
+  email: patterns.emailOnly,
+  url: patterns.urlOnly,
+  number: patterns.floatOnly,
 };
 
 /**
@@ -39,78 +30,85 @@ const typeRestrictions: Record<InputTypeRestrictions, RegExp> = {
  */
 
 export function qFormValidate(form: HTMLFormElement, options?: QFVOptions): void {
-  alert("Hello from qFormValidate");
   // Merge default options with user-provided options
   const defaults: QFVOptions = {
     scrollTopOffset: 100,
     defaultErrorMsg: 'Please complete this field.',
     defaultErrorMsgSection: 'Please complete this section.',
     onSubmitError: () => {},
-    onError: () => {},
-    onSuccess: () => {},
+    onSubmitSuccess: () => {},
+    onFieldError: (field, errorMsg) => {},
+    onFieldSuccess: (field) => {},
     onAfterValidate: () => {},
     onBeforeValidate: () => {},
     ...options, // overwrite defaults with any provided options
   };
 
   form.noValidate = true;
-  form.addEventListener("clear", () => clearErrors(form));
+  form.addEventListener('clear', () => clearErrors(form));
 
-  form.addEventListener("submit", (event) => {
+  form.addEventListener('submit', (event) => {
     event.preventDefault();
     return validateForm(form);
   });
 
-  const fields = form.querySelectorAll<FormFieldElement>(
-    "input, select, textarea"
-  );
+  const fields = form.querySelectorAll<FormFieldElement>('input, select, textarea');
   fields.forEach((field) => {
     watchField(field);
   });
 
-  // Example: call onBeforeValidate callback
-  // defaults.onBeforeValidate();
+  
+  /**
+   * Description placeholder
+   *
+   * @param {FormFieldElement} field 
+   * @returns {string} 
+   */
 
   function getErrorMsg(field: FormFieldElement): string {
     if (field.dataset.errorMsg) return field.dataset.errorMsg;
-    if (field instanceof HTMLSelectElement) return "Please select an option";
+    if (field instanceof HTMLSelectElement) return 'Please select an option';
     switch (field.type) {
       case 'tel':
-        return "Please enter a valid telephone number";
-        break;
+        return 'Please enter a valid telephone number';
       case 'url':
-        return "Please enter a valid URL.";
-        break;
+        return 'Please enter a valid URL.';
       case 'email':
-        return "Please enter a valid email address.";
-        break;
+        return 'Please enter a valid email address.';
       case 'password':
-        return "Please enter a valid password";
-        break;
+        return 'Please enter a valid password';
       default:
         return defaults.defaultErrorMsg;
-        break;
     }
   }
 
   function addError(field: FormFieldElement): void {
     const errorMsg = getErrorMsg(field);
-
-    field.classList.add("error");
-    field.ariaInvalid = "true";
-
     const parent = field.closest('div, li, p, label');
+    const fieldId = field.id ? `error-${field.id}` : `error-${crypto.randomUUID()}`;
+
+
+    defaults.onFieldError?.(field, errorMsg);
+
+    field.classList.add('error');
+    field.setAttribute('aria-invalid','true');
+    field.setAttribute('aria-describedby', fieldId);
+
     if (parent) {
       parent.classList.add('error');
       parent.querySelector('span.inline-error')?.remove();
-      parent.insertAdjacentHTML('beforeend', `<span class="inline-error" id="error_${field.name}" aria-hidden="false" role="alert">${errorMsg}</span>`);
+      parent.insertAdjacentHTML(
+        'beforeend',
+        `<span class="inline-error" id="${fieldId}" aria-hidden="false" role="alert">${errorMsg}</span>`,
+      );
     }
   }
 
   function removeFieldError(field: FormFieldElement): void {
-    field.classList.remove("error");
-    field.ariaInvalid = "false";
-    field.removeAttribute("aria-describedby");
+    field.classList.remove('error');
+    field.removeAttribute('aria-invalid');
+    field.removeAttribute('aria-describedby');
+
     const parent = field.closest('div, li, p, label');
     if (parent) {
       parent.classList.remove('error');
@@ -124,54 +122,62 @@ export function qFormValidate(form: HTMLFormElement, options?: QFVOptions): void
       const inputType = field.type as InputTypeRestrictions;
       if (inputType in typeRestrictions) {
         const restriction = typeRestrictions[inputType];
-        field.addEventListener("keydown", (event: KeyboardEvent) => restrictCharacters(field, event, restriction)
+        field.addEventListener('keydown', (event: KeyboardEvent) =>
+          restrictCharacters(field, event, restriction),
         );
       }
       // Using the above bind action, watch the form element
-      ['blur', 'keyup'].forEach(bind =>
-        field.addEventListener(bind, (event) => { field.value = trim(field.value); validateField(field, event) }
-      ));
-    }
-    
-    // SELECT
-    if (field instanceof HTMLSelectElement) {
-      ['blur', 'change'].forEach(bind =>
-        field.addEventListener(bind, (event) => { validateField(field, event) }
-      ));
+      ['blur', 'keyup'].forEach((bind) =>
+        field.addEventListener(bind, (event) => {
+          if (event.type === 'blur') {
+            field.value = trim(field.value);
+          }
+          validateField(field, event);
+        }),
+      );
     }
 
+    // SELECT
+    if (field instanceof HTMLSelectElement) {
+      ['blur', 'change'].forEach((bind) =>
+        field.addEventListener(bind, (event) => {
+          validateField(field, event);
+        }),
+      );
+    }
   }
 
   function clearErrors(form: HTMLFormElement): void {
-    const fields = form.querySelectorAll<FormFieldElement>(
-      "input, select, textarea"
-    );
+    const fields = form.querySelectorAll<FormFieldElement>('input, select, textarea');
     fields.forEach((field) => removeFieldError(field));
   }
 
-  function restrictCharacters(field: FormFieldElement, event: KeyboardEvent, restrictionType: RegExp) {
+  function restrictCharacters(
+    field: FormFieldElement,
+    event: KeyboardEvent,
+    restrictionType: RegExp,
+  ) {
     const ignoreKeys = [
-      "ArrowRight",
-      "ArrowLeft",
-      "ArrowUp",
-      "ArrowDown",
-      "Backspace",
-      "Delete",
-      "Tab",
-      "Insert",
-      "Home",
-      "End",
-      "PageUp",
-      "PageDown",
+      'ArrowRight',
+      'ArrowLeft',
+      'ArrowUp',
+      'ArrowDown',
+      'Backspace',
+      'Delete',
+      'Tab',
+      'Insert',
+      'Home',
+      'End',
+      'PageUp',
+      'PageDown',
     ];
 
     // Ignore the usual keys (Some things to consider altKey, ctrlKey, metaKey or shiftKey)
-    if (
-      (event.key && ignoreKeys.includes(event.key)) || event.ctrlKey || event.metaKey)
+    if ((event.key && ignoreKeys.includes(event.key)) || event.ctrlKey || event.metaKey)
       return true;
 
     // if they pressed esc... remove focus from field...
-    if (event.key === "Escape") {
+    if (event.key === 'Escape') {
       field.blur();
       return false;
     }
@@ -183,7 +189,7 @@ export function qFormValidate(form: HTMLFormElement, options?: QFVOptions): void
   }
 
   function validateField(field: FormFieldElement, event?: Event) {
-    const validate = event ? (event.type !== 'keyup' && event.type !== 'change') : true;
+    const validate = event ? event.type !== 'keyup' : true;
 
     // Only validate on some events so not to show the message too early
     if (validate) {
@@ -192,14 +198,16 @@ export function qFormValidate(form: HTMLFormElement, options?: QFVOptions): void
         // Select
         if (field instanceof HTMLSelectElement) {
           if (field.multiple) {
-            const hasSelection = Array.from(field.options).some(opt => opt.selected && opt.value !== "");
+            const hasSelection = Array.from(field.options).some(
+              (opt) => opt.selected && opt.value !== '',
+            );
             if (!hasSelection) {
               addError(field);
               return true;
             }
           } else {
             const selectedOption = field.options[field.selectedIndex];
-            if (!selectedOption || selectedOption.value === "") {
+            if (!selectedOption || selectedOption.value === '') {
               addError(field);
               return true;
             }
@@ -207,23 +215,22 @@ export function qFormValidate(form: HTMLFormElement, options?: QFVOptions): void
         }
 
         // Textarea
-        if ((field instanceof HTMLTextAreaElement)) {
-          if (field.value === "") {
+        if (field instanceof HTMLTextAreaElement) {
+          if (field.value === '') {
             addError(field);
             return true;
           }
         }
-        
+
         // Input
-        if (field instanceof HTMLInputElement && !["checkbox", "radio"].includes(field.type)) {
+        if (field instanceof HTMLInputElement && !['checkbox', 'radio'].includes(field.type)) {
           if (field.type === 'file') {
-            console.log(field.files);
             if (!field.files || field.files.length === 0) {
               addError(field);
               return true;
             }
           } else {
-            if (field.value === "") {
+            if (field.value === '') {
               addError(field);
               return true;
             }
@@ -231,8 +238,10 @@ export function qFormValidate(form: HTMLFormElement, options?: QFVOptions): void
         }
 
         // Checkbox and radio
-        if (field instanceof HTMLInputElement && ["checkbox", "radio"].includes(field.type)) {
-          const group = field.form?.querySelectorAll<HTMLInputElement>(`input[name="${field.name}"]`);
+        if (field instanceof HTMLInputElement && ['checkbox', 'radio'].includes(field.type)) {
+          const group = field.form?.querySelectorAll<HTMLInputElement>(
+            `input[name="${field.name}"]`,
+          );
           if (group && !Array.from(group).some((el) => el.checked)) {
             addError(field);
             return true;
@@ -242,19 +251,19 @@ export function qFormValidate(form: HTMLFormElement, options?: QFVOptions): void
 
       if (field instanceof HTMLInputElement) {
         // Is it an email field
-        if (field.type == "email" && field.value !== '' && !isValidEmail(field.value)) {
+        if (field.type == 'email' && field.value !== '' && !isValidEmail(field.value)) {
           addError(field);
           return true;
         }
 
         // Is it a URL field
-        if (field.type == "url" && field.value !== '' && !isValidURL(field.value)) {
+        if (field.type == 'url' && field.value !== '' && !isValidURL(field.value)) {
           addError(field);
           return true;
         }
 
         // Is it a tel field
-        if (field.type === "tel" && field.value !== '' && !isValidTel(field.value)) {
+        if (field.type === 'tel' && field.value !== '' && !isValidTel(field.value)) {
           addError(field);
           return true;
         }
@@ -267,9 +276,7 @@ export function qFormValidate(form: HTMLFormElement, options?: QFVOptions): void
 
         // Same as another field
         if (field.dataset.sameAs) {
-          const sameAs = field.form?.querySelector<HTMLInputElement>(
-            `#${field.dataset.sameAs}`
-          );
+          const sameAs = field.form?.querySelector<HTMLInputElement>(`#${field.dataset.sameAs}`);
           if (sameAs && sameAs.value != field.value) {
             addError(field);
             return true;
@@ -277,15 +284,15 @@ export function qFormValidate(form: HTMLFormElement, options?: QFVOptions): void
         }
 
         // Is it alphaOnly
-        if (field.classList.contains("alpha") && !alphaOnly.test(field.value)) {
+        if (field.classList.contains('alpha') && !patterns.alphaOnly.test(field.value)) {
           addError(field);
           return true;
         }
 
         // Is it alphaNumericOnly
         if (
-          field.classList.contains("alphanumeric") &&
-          !alphaNumericOnly.test(field.value)
+          field.classList.contains('alphanumeric') &&
+          !patterns.alphaNumericOnly.test(field.value)
         ) {
           addError(field);
           return true;
@@ -298,27 +305,34 @@ export function qFormValidate(form: HTMLFormElement, options?: QFVOptions): void
       // }
 
       // $options.onAfterValidate();
+      return false;
     }
 
     // No errors, clear any visual messages
     removeFieldError(field);
+   
+    defaults.onFieldSuccess?.(field);
   }
 
   function validateForm(form: HTMLFormElement): boolean {
+    
+    defaults.onBeforeValidate?.();
+
     let hasError = false;
     // Clear errors before starting
     // clearErrors();
 
-    const fields = form.querySelectorAll<FormFieldElement>("input, select, textarea");
+    const fields = form.querySelectorAll<FormFieldElement>('input, select, textarea');
     fields.forEach((field) => {
       // $options.onBeforeValidate();
       if (validateField(field)) hasError = true;
-      validateField(field);
       // $options.onAfterValidate();
     });
-    alert(hasError);
+
+    defaults.onAfterValidate?.();
+    if (!hasError && defaults.onSubmitSuccess) defaults.onSubmitSuccess();
+    if (hasError && defaults.onSubmitError) defaults.onSubmitError();
+
     return !hasError;
   }
-
-
 }

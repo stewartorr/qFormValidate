@@ -81,24 +81,28 @@
       </li>
       <li>
         <label>Phone</label>
-        <input type="tel" name="phone" required>
+        <input type="tel" name="phone" id="phone" required>
       </li>
       <li>
         <label>Password</label>
         <input type="password" name="password" data-min-length="6" required>
       </li>
+      <li>
+        <input type="checkbox" name="checkbox" required data-error-msg="You must agree to this thing.">
+        <label>I agree to something</label>
+      </li>
     </ol>
-
     <button type="submit">Submit</button>
   </form>
 
   <script type="module">
-    import { qFormValidate } from './dist/qformvalidate.js';
+    import { qFormValidate } from './dist/index.js';
 
     const form = document.getElementById('myForm');
     qFormValidate(form, {
       onBeforeValidate: () => console.log('Validating...'),
-      onAfterValidate: () => console.log('Done validating!')
+      onAfterValidate: () => console.log('Done validating!'),
+      onFieldSuccess: (field) => console.log(field, 'VALID')
     });
   </script>
 </body>

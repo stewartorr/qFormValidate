@@ -26,5 +26,5 @@ export function isValidTel(tel: string): boolean {
 }
 
 export function trim(s: string): string {
-  return s.replace(/\s+/g, " ").trim();
+  return s.replace(/\s+/g, ' ').trim();
 }

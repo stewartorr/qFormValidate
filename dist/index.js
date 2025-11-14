@@ -1,2 +1,2 @@
-export * from "./qFormValidator";
-export * from "./utils";
+export * from './qformvalidate.js';
+export * from './utils.js';

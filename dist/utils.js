@@ -22,5 +22,5 @@ export function isValidTel(tel) {
     return pattern.test(tel);
 }
 export function trim(s) {
-    return s.replace(/\s+/g, " ").trim();
+    return s.replace(/\s+/g, ' ').trim();
 }
