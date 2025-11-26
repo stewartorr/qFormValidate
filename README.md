@@ -25,4 +25,4 @@ You can integrate this into your own project using export or a simple include on
 
 ## Try it
 
-[Demo](https://<username>.github.io/qFormValidate/)
+[Demo](https://stewartorr.github.io/qFormValidate/)
