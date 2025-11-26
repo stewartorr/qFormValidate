@@ -1,7 +1,7 @@
 import { patterns, isValidEmail, isValidURL, isValidTel, trim } from './utils.js';
 
 // Define an interface for the options
-export interface QFVOptions {
+export interface qFormValidateOptions {
   scrollTopOffset?: number;
   defaultErrorMsg: string;
   defaultErrorMsgSection: string;
@@ -29,9 +29,9 @@ const typeRestrictions: Record<InputTypeRestrictions, RegExp> = {
  * @param options - Optional configuration overrides
  */
 
-export function qFormValidate(form: HTMLFormElement, options?: QFVOptions): void {
+export function qFormValidate(form: HTMLFormElement, options?: qFormValidateOptions): void {
   // Merge default options with user-provided options
-  const defaults: QFVOptions = {
+  const defaults: qFormValidateOptions = {
     scrollTopOffset: 100,
     defaultErrorMsg: 'Please complete this field.',
     defaultErrorMsgSection: 'Please complete this section.',

@@ -1,4 +1,19 @@
 {
+  "name": "qformvalidate",
+  "author": "Stewart Orr",
+  "license": "MIT",
+  "description": "qFormValidate is a simple drop-in format validation library that tries to ensure the user enters the correct type of values for each form field to prevent any frustration.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/stewartorr/qFormValidate.git"
+  },
+  "version": "0.0.2",
+  "files": [
+    "dist/qformvalidate.esm.js",
+    "dist/qformvalidate.browser.js",
+    "dist/qformvalidate.browser.min.js",
+    "README.md"
+  ],
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
     "@eslint/js": "^9.39.1",
