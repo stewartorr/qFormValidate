@@ -30,6 +30,8 @@ const typeRestrictions: Record<InputTypeRestrictions, RegExp> = {
  */
 
 export function qFormValidate(form: HTMLFormElement, options?: qFormValidateOptions): void {
+  if (form.dataset.qformvalidate === "true") return;
+  form.dataset.qformvalidate = "true";
   // Merge default options with user-provided options
   const defaults: qFormValidateOptions = {
     scrollTopOffset: 100,
@@ -48,8 +50,7 @@ export function qFormValidate(form: HTMLFormElement, options?: qFormValidateOpti
   form.addEventListener('clear', () => clearErrors(form));
 
   form.addEventListener('submit', (event) => {
-    event.preventDefault();
-    return validateForm(form);
+    if (!validateForm(form)) event.preventDefault();
   });
 
   const fields = form.querySelectorAll<FormFieldElement>('input, select, textarea');
@@ -59,29 +60,44 @@ export function qFormValidate(form: HTMLFormElement, options?: qFormValidateOpti
 
   
   /**
-   * Description placeholder
-   *
+   * Generate an error message for a field depending on it's type
    * @param {FormFieldElement} field 
    * @returns {string} 
    */
 
   function getErrorMsg(field: FormFieldElement): string {
     if (field.dataset.errorMsg) return field.dataset.errorMsg;
-    if (field instanceof HTMLSelectElement) return 'Please select an option';
+    if (field instanceof HTMLSelectElement) return 'Select an option.';
+    const orLeaveBlank: string = field.required ? "" : " or leave blank";
+    const minLength: string = field.dataset.minLength ? ` (min ${field.dataset.minLength} chars)` : "";
     switch (field.type) {
-      case 'tel':
-        return 'Please enter a valid telephone number';
-      case 'url':
-        return 'Please enter a valid URL.';
-      case 'email':
-        return 'Please enter a valid email address.';
-      case 'password':
-        return 'Please enter a valid password';
-      default:
+      case 'file': {
+        const fileInput = field as HTMLInputElement;
+        const filesMsg: string = fileInput.multiple ? "one or more files" : "a file";
+        return `Select ${filesMsg} to upload.`;
+      }
+      case 'tel': {
+        return `Enter a valid telephone number${orLeaveBlank}${minLength}.`;
+      }
+      case 'url': {
+        return `Enter a valid URL${orLeaveBlank}${minLength}.`;
+      }
+      case 'email': {
+        return `Enter a valid email address${orLeaveBlank}${minLength}.`;
+      }
+      case 'password': {
+        return `Enter a valid password${orLeaveBlank}${minLength}.`;
+      }
+      default: {
         return defaults.defaultErrorMsg;
+      }
     }
   }
 
+  /**
+   * Add an error message to a field
+   * @param {FormFieldElement} field 
+   */
   function addError(field: FormFieldElement): void {
     const errorMsg = getErrorMsg(field);
     const parent = field.closest('div, li, p, label');
@@ -127,9 +143,9 @@ export function qFormValidate(form: HTMLFormElement, options?: qFormValidateOpti
         );
       }
       // Using the above bind action, watch the form element
-      ['blur', 'keyup'].forEach((bind) =>
+      ['blur', 'keyup', 'input'].forEach((bind) => 
         field.addEventListener(bind, (event) => {
-          if (event.type === 'blur') {
+          if (event.type === 'blur' && field.type !== 'file') {
             field.value = trim(field.value);
           }
           validateField(field, event);
@@ -189,7 +205,8 @@ export function qFormValidate(form: HTMLFormElement, options?: qFormValidateOpti
   }
 
   function validateField(field: FormFieldElement, event?: Event) {
-    const validate = event ? event.type !== 'keyup' : true;
+    // const validate = event ? event.type !== 'keyup' : true;
+    const validate = true;
 
     // Only validate on some events so not to show the message too early
     if (validate) {
@@ -303,14 +320,15 @@ export function qFormValidate(form: HTMLFormElement, options?: qFormValidateOpti
       // if ($type == 'password') {
       //     checkStrength($field);
       // }
+  
+      // No errors, clear any visual messages
+      removeFieldError(field);
 
       // $options.onAfterValidate();
       return false;
     }
 
-    // No errors, clear any visual messages
-    removeFieldError(field);
-   
+
     defaults.onFieldSuccess?.(field);
   }
 
