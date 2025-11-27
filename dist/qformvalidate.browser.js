@@ -64,6 +64,8 @@ var qFormValidate = (() => {
     number: patterns.floatOnly
   };
   function qFormValidate(form, options) {
+    if (form.dataset.qformvalidate === "true") return;
+    form.dataset.qformvalidate = "true";
     const defaults = {
       scrollTopOffset: 100,
       defaultErrorMsg: "Please complete this field.",
@@ -86,8 +88,7 @@ var qFormValidate = (() => {
     form.noValidate = true;
     form.addEventListener("clear", () => clearErrors(form));
     form.addEventListener("submit", (event) => {
-      event.preventDefault();
-      return validateForm(form);
+      if (!validateForm(form)) event.preventDefault();
     });
     const fields = form.querySelectorAll("input, select, textarea");
     fields.forEach((field) => {
@@ -95,18 +96,30 @@ var qFormValidate = (() => {
     });
     function getErrorMsg(field) {
       if (field.dataset.errorMsg) return field.dataset.errorMsg;
-      if (field instanceof HTMLSelectElement) return "Please select an option";
+      if (field instanceof HTMLSelectElement) return "Select an option.";
+      const orLeaveBlank = field.required ? "" : " or leave blank";
+      const minLength = field.dataset.minLength ? ` (min ${field.dataset.minLength} chars)` : "";
       switch (field.type) {
-        case "tel":
-          return "Please enter a valid telephone number";
-        case "url":
-          return "Please enter a valid URL.";
-        case "email":
-          return "Please enter a valid email address.";
-        case "password":
-          return "Please enter a valid password";
-        default:
+        case "file": {
+          const fileInput = field;
+          const filesMsg = fileInput.multiple ? "one or more files" : "a file";
+          return `Select ${filesMsg} to upload.`;
+        }
+        case "tel": {
+          return `Enter a valid telephone number${orLeaveBlank}${minLength}.`;
+        }
+        case "url": {
+          return `Enter a valid URL${orLeaveBlank}${minLength}.`;
+        }
+        case "email": {
+          return `Enter a valid email address${orLeaveBlank}${minLength}.`;
+        }
+        case "password": {
+          return `Enter a valid password${orLeaveBlank}${minLength}.`;
+        }
+        default: {
           return defaults.defaultErrorMsg;
+        }
       }
     }
     function addError(field) {
@@ -146,9 +159,9 @@ var qFormValidate = (() => {
             (event) => restrictCharacters(field, event, restriction)
           );
         }
-        ["blur", "keyup"].forEach(
+        ["blur", "keyup", "input"].forEach(
           (bind) => field.addEventListener(bind, (event) => {
-            if (event.type === "blur") {
+            if (event.type === "blur" && field.type !== "file") {
               field.value = trim(field.value);
             }
             validateField(field, event);
@@ -194,7 +207,7 @@ var qFormValidate = (() => {
       }
     }
     function validateField(field, event) {
-      const validate = event ? event.type !== "keyup" : true;
+      const validate = true;
       if (validate) {
         if (field.required) {
           if (field instanceof HTMLSelectElement) {
@@ -276,9 +289,9 @@ var qFormValidate = (() => {
             return true;
           }
         }
+        removeFieldError(field);
         return false;
       }
-      removeFieldError(field);
       defaults.onFieldSuccess?.(field);
     }
     function validateForm(form2) {

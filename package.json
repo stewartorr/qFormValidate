@@ -7,7 +7,7 @@
     "type": "git",
     "url": "https://github.com/stewartorr/qFormValidate.git"
   },
-  "version": "0.0.3",
+  "version": "0.0.4",
   "files": [
     "dist/qformvalidate.cjs.js",
     "dist/qformvalidate.esm.js",
