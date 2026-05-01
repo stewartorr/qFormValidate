@@ -94,16 +94,16 @@
     </ol>
     <button type="submit">Submit</button>
   </form>
-
-  <script type="module">
-    import { qFormValidate } from './dist/qformvalidate.esm.js';
-
-    const form = document.getElementById('myForm');
-    qFormValidate(form, {
+<script src="https://cdn.jsdelivr.net/npm/qformvalidate@0.0.4/dist/qformvalidate.browser.min.js"></script>
+<script>
+  const form = document.getElementById('myForm');
+  if (form) {
+    const validator = qFormValidate(form, {
       onBeforeValidate: () => console.log('Validating...'),
       onAfterValidate: () => console.log('Done validating!'),
       onFieldSuccess: (field) => console.log(field, 'VALID')
     });
-  </script>
+  }
+</script>
 </body>
 </html>
